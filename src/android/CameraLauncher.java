@@ -78,6 +78,9 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
     
     private static final String LOG_TAG = "CameraLauncher";
     private static final int CROP_CAMERA = 100;
+	
+    private static final int FRONT = 1;
+    private static final int BACK = 0; 
 
     private int mQuality;                   // Compression quality hint (0-100: 0=low quality & high compression, 100=compress of max quality)
     private int targetWidth;                // desired width of the image
@@ -96,6 +99,9 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
     private MediaScannerConnection conn;    // Used to update gallery app with newly-written files
     private Uri scanMe;                     // Uri of image to be added to content store
     private Uri croppedUri;
+	
+	// Camera direction option
+	private int cameraDirection;
 
     /**
      * Executes the request and returns PluginResult.
@@ -117,6 +123,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             this.encodingType = JPEG;
             this.mediaType = PICTURE;
             this.mQuality = 80;
+			this.cameraDirection = BACK; 
 
             this.mQuality = args.getInt(0);
             destType = args.getInt(1);
@@ -128,6 +135,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             this.allowEdit = args.getBoolean(7);
             this.correctOrientation = args.getBoolean(8);
             this.saveToPhotoAlbum = args.getBoolean(9);
+			this.cameraDirection = args.getInt(10);
 
             // If the user specifies a 0 or smaller width/height
             // make it -1 so later comparisons succeed
@@ -205,7 +213,15 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
 
         // Display camera
         Intent intent = new Intent("android.media.action.IMAGE_CAPTURE");
+		
+		// Fix camera orientation on Android devices. We're not trusting that the user put in a valid value, if we get anything except front, then we'll assume rear.
+		if(FRONT == this.cameraDirection){
+			intent.putExtra("android.intent.extras.CAMERA_FACING", FRONT);
+		}else{
+			intent.putExtra("android.intent.extras.CAMERA_FACING", BACK);			
+		}
 
+		
         // Specify file so that large image is captured and returned
         File photo = createCaptureFile(encodingType);
         intent.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, Uri.fromFile(photo));
